@@ -1,0 +1,42 @@
+{
+  "name": "stay-ready-training-academy",
+  "version": "1.0.0",
+  "description": "Stay Ready Training Academy - Private Security Training Platform",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "nodemon server/index.js",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install:all": "npm install && cd client && npm install",
+    "init:memberships": "node server/scripts/initMembershipPlans.js",
+    "set:admin": "node server/scripts/setAdminUser.js",
+    "migrate:users": "node server/scripts/migrateStudentsToUsers.js"
+  },
+  "keywords": [
+    "security training",
+    "teachable",
+    "online courses"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7",
+    "pdf-lib": "^1.17.1",
+    "sqlite3": "^5.1.7",
+    "stripe": "^14.7.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
+  }
+}
