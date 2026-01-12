@@ -33,9 +33,9 @@ const QUESTIONS = [
     question:
       'It is important to know what expressions and phrases trigger negative reactions in yourself.',
     options: [
-      'True; it helps you control your reactions when you're aware of what bothers you.',
+      "True; it helps you control your reactions when you're aware of what bothers you.",
       'True; it lets you come up with good comebacks',
-      'False; it's better to react emotionally',
+      "False; it's better to react emotionally",
       'False; this would not allow you to react instinctively',
     ],
     correctIndex: 0,
@@ -89,7 +89,7 @@ const QUESTIONS = [
   },
   {
     question:
-      'A security officer's right to protect a specific person or area is derived from __________.',
+      "A security officer's right to protect a specific person or area is derived from __________.",
     options: ['their license', 'their uniform', 'their vehicle', 'all of the above'],
     correctIndex: 0,
   },
@@ -100,7 +100,7 @@ const QUESTIONS = [
       'Yes; you are allowed to work after a 24 hour wait',
       'No; you must wait 48 hours before starting work',
       'Yes; you can work immediately after submitting the application',
-      'No; you aren't allowed to work until the status inform you that you have been accepted',
+      "No; you aren't allowed to work until the status inform you that you have been accepted",
     ],
     correctIndex: 3,
   },
@@ -155,7 +155,7 @@ const QUESTIONS = [
   },
   {
     question:
-      'In order to identify the meaning of someone's statement, you must first identify the __________ and __________.',
+      "In order to identify the meaning of someone's statement, you must first identify the __________ and __________.",
     options: ['content; intent', 'content; feeling', 'intent; tone', 'background; feeling'],
     correctIndex: 0,
   },
@@ -220,7 +220,7 @@ const QUESTIONS = [
   },
   {
     question:
-      'You should cover the 5W's + 1H in your report, they include __________, When, __________, Who, Where, and How.',
+      "You should cover the 5W's + 1H in your report, they include __________, When, __________, Who, Where, and How.",
     options: ['Whether; Whom', 'Weather; Whose', 'Who; What', 'Wherefore; Which'],
     correctIndex: 2,
   },
