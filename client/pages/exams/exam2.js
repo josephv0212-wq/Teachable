@@ -43,7 +43,7 @@ const QUESTIONS = [
   {
     question: 'Personal ethics are ___________.',
     options: [
-      'the moral framework that guide a person's behavior',
+      "the moral framework that guide a person's behavior",
       'the rules that your parents gave you',
       'not lying or stealing',
       'all of the above',
