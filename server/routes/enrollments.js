@@ -30,7 +30,7 @@ function mapEnrollmentRow(row) {
 }
 
 // Helper function to find or create enrollment
-async function findOrCreateEnrollment(studentId, courseId) {
+async function findOrCreateEnrollment(studentId, courseId, skipAccessCheck = false) {
   // Try to find existing enrollment
   let enrollment = await get(
     'SELECT * FROM enrollments WHERE studentId = ? AND courseId = ?',
@@ -58,12 +58,28 @@ async function findOrCreateEnrollment(studentId, courseId) {
       throw new Error('Student or course not found');
     }
 
+    // Check membership access before creating enrollment (unless explicitly skipped)
+    if (!skipAccessCheck) {
+      const membershipCheck = await membershipService.checkMembershipAccess(studentId, courseId);
+      if (!membershipCheck.hasAccess) {
+        throw new Error('You do not have access to this course. Please upgrade your membership plan.');
+      }
+    }
+
     const enrollmentResult = await run(
       `INSERT INTO enrollments (studentId, courseId, paymentStatus) VALUES (?, ?, ?)`,
       [studentId, courseId, 'paid']
     );
 
     enrollment = await get('SELECT * FROM enrollments WHERE id = ?', [enrollmentResult.id]);
+  } else {
+    // Even if enrollment exists, verify current membership access
+    if (!skipAccessCheck) {
+      const membershipCheck = await membershipService.checkMembershipAccess(studentId, enrollment.courseId);
+      if (!membershipCheck.hasAccess) {
+        throw new Error('You do not have access to this course. Please upgrade your membership plan.');
+      }
+    }
   }
 
   return enrollment;
@@ -184,6 +200,16 @@ router.post('/', async (req, res) => {
       const discountPercent = await membershipService.getMembershipDiscount(studentIdNum);
       if (discountPercent > 0) {
         discountApplied = (course.price * discountPercent) / 100;
+      }
+    }
+    
+    // If student doesn't have membership access, require payment
+    if (!membershipCheck.hasAccess && (!paymentId || paymentStatus !== 'paid')) {
+      // Check if this is a free course (price = 0)
+      if (course.price > 0) {
+        return res.status(403).json({ 
+          error: 'You do not have access to this course. Please upgrade your membership plan or complete payment.' 
+        });
       }
     }
 
@@ -328,7 +354,19 @@ router.post('/:enrollmentId/exam', async (req, res) => {
       try {
         enrollment = await findOrCreateEnrollment(studentId, courseId);
       } catch (error) {
-        return res.status(404).json({ error: error.message });
+        const statusCode = error.message.includes('access') ? 403 : 404;
+        return res.status(statusCode).json({ error: error.message });
+      }
+    } else {
+      // Verify membership access for existing enrollment
+      const membershipCheck = await membershipService.checkMembershipAccess(
+        enrollment.studentId, 
+        enrollment.courseId
+      );
+      if (!membershipCheck.hasAccess) {
+        return res.status(403).json({ 
+          error: 'You do not have access to this course. Please upgrade your membership plan.' 
+        });
       }
     }
 
@@ -337,6 +375,7 @@ router.post('/:enrollmentId/exam', async (req, res) => {
   } catch (error) {
     console.error('Error submitting exam:', error);
     const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('access') ? 403 :
                        error.message.includes('Expected') ? 400 : 500;
     res.status(statusCode).json({ 
       error: error.message || 'Failed to submit exam',
@@ -362,7 +401,8 @@ router.post('/exam/submit', async (req, res) => {
     try {
       enrollment = await findOrCreateEnrollment(studentId, courseId);
     } catch (error) {
-      return res.status(404).json({ error: error.message });
+      const statusCode = error.message.includes('access') ? 403 : 404;
+      return res.status(statusCode).json({ error: error.message });
     }
 
     const result = await processExamSubmission(enrollment, answers);
@@ -370,6 +410,7 @@ router.post('/exam/submit', async (req, res) => {
   } catch (error) {
     console.error('Error submitting exam:', error);
     const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('access') ? 403 :
                        error.message.includes('Expected') ? 400 : 500;
     res.status(statusCode).json({ 
       error: error.message || 'Failed to submit exam',

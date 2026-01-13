@@ -62,6 +62,35 @@ export default function ExamPage() {
       const studentId = getStudentIdFromQueryOrSession(router.query.studentId)
       if (!isValidStudentId(studentId) || !id) return
 
+      // Check membership access first
+      try {
+        const membershipRes = await axios.get(`${API_URL}/memberships/student/${studentId}`).catch(() => ({ data: null }))
+        const studentMembership = membershipRes.data
+        
+        if (studentMembership) {
+          // Check if course is in membership tier
+          const planRes = await axios.get(`${API_URL}/memberships/plans/${studentMembership.membershipPlanId}`)
+          const plan = planRes.data
+          
+          if (!plan.courses || !plan.courses.some(c => c.id === parseInt(id) || c._id === parseInt(id))) {
+            alert('You do not have access to this course. Please upgrade your membership plan.')
+            router.push('/memberships')
+            return
+          }
+        } else {
+          // No membership - check if course is free
+          const courseRes = await axios.get(`${API_URL}/courses/${id}`)
+          if (courseRes.data.price > 0) {
+            alert('You do not have access to this course. Please upgrade your membership plan or complete payment.')
+            router.push(`/courses/${id}`)
+            return
+          }
+        }
+      } catch (membershipError) {
+        console.error('Error checking membership:', membershipError)
+        // Continue to enrollment check
+      }
+
       // Check if enrollment exists
       const enrollmentsRes = await axios.get(`${API_URL}/enrollments/student/${studentId}`)
       const existingEnrollment = enrollmentsRes.data.find(
@@ -78,31 +107,83 @@ export default function ExamPage() {
         return
       }
 
-      // Create new enrollment automatically (test exams are free)
-      const enrollmentRes = await axios.post(`${API_URL}/enrollments`, {
-        studentId: parseInt(studentId),
-        courseId: parseInt(id),
-        paymentStatus: 'paid'
-      })
+      // Create new enrollment - will check membership access on backend
+      try {
+        const enrollmentRes = await axios.post(`${API_URL}/enrollments`, {
+          studentId: parseInt(studentId),
+          courseId: parseInt(id),
+          paymentStatus: 'paid'
+        })
 
-      const newEnrollmentId = enrollmentRes.data.id || enrollmentRes.data._id
-      router.replace(
-        `/courses/${id}/exam?enrollmentId=${newEnrollmentId}&studentId=${studentId}`,
-        undefined,
-        { shallow: true }
-      )
+        const newEnrollmentId = enrollmentRes.data.id || enrollmentRes.data._id
+        router.replace(
+          `/courses/${id}/exam?enrollmentId=${newEnrollmentId}&studentId=${studentId}`,
+          undefined,
+          { shallow: true }
+        )
+      } catch (enrollmentError) {
+        if (enrollmentError.response?.status === 403) {
+          alert(enrollmentError.response.data.error || 'You do not have access to this course. Please upgrade your membership plan.')
+          router.push('/memberships')
+        } else {
+          throw enrollmentError
+        }
+      }
     } catch (error) {
       console.error('Error creating enrollment:', error)
-      // Don't block exam, just log error
+      if (error.response?.status === 403) {
+        alert(error.response.data.error || 'You do not have access to this course.')
+        router.push('/memberships')
+      } else {
+        alert('Failed to access exam. Please try again.')
+      }
     }
   }
 
   const fetchCourse = async () => {
     try {
       const response = await axios.get(`${API_URL}/courses/${id}`)
-      setCourse(response.data)
+      const courseData = response.data
+      
+      // Check membership access before showing exam
+      const studentId = getStudentIdFromQueryOrSession(router.query.studentId)
+      if (isValidStudentId(studentId)) {
+        try {
+          const membershipRes = await axios.get(`${API_URL}/memberships/student/${studentId}`).catch(() => ({ data: null }))
+          const studentMembership = membershipRes.data
+          
+          if (studentMembership) {
+            // Check if course is in membership tier
+            const planRes = await axios.get(`${API_URL}/memberships/plans/${studentMembership.membershipPlanId}`)
+            const plan = planRes.data
+            
+            if (!plan.courses || !plan.courses.some(c => c.id === parseInt(id) || c._id === parseInt(id))) {
+              setCourse(null)
+              alert('You do not have access to this course. Please upgrade your membership plan.')
+              router.push('/memberships')
+              setLoading(false)
+              return
+            }
+          } else if (courseData.price > 0) {
+            // No membership and course is not free
+            setCourse(null)
+            alert('You do not have access to this course. Please upgrade your membership plan or complete payment.')
+            router.push(`/courses/${id}`)
+            setLoading(false)
+            return
+          }
+        } catch (membershipError) {
+          console.error('Error checking membership:', membershipError)
+          // Continue to show course if membership check fails
+        }
+      }
+      
+      setCourse(courseData)
     } catch (error) {
       console.error('Error fetching course:', error)
+      if (error.response?.status === 404) {
+        setCourse(null)
+      }
     } finally {
       setLoading(false)
     }

@@ -14,6 +14,8 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showEnrollment, setShowEnrollment] = useState(false)
+  const [hasAccess, setHasAccess] = useState(false)
+  const [membership, setMembership] = useState(null)
 
   useEffect(() => {
     if (id) {
@@ -24,7 +26,44 @@ export default function CourseDetail() {
   const fetchCourse = async () => {
     try {
       const response = await axios.get(`${API_URL}/courses/${id}`)
-      setCourse(response.data)
+      const courseData = response.data
+      setCourse(courseData)
+      
+      // Check membership access
+      try {
+        // Try to get student ID from session or query
+        const studentId = router.query.studentId || localStorage.getItem('studentId')
+        if (studentId && studentId !== 'undefined') {
+          const membershipRes = await axios.get(`${API_URL}/memberships/student/${studentId}`).catch(() => ({ data: null }))
+          const studentMembership = membershipRes.data
+          setMembership(studentMembership)
+          
+          if (studentMembership) {
+            // Check if course is in membership tier
+            const planRes = await axios.get(`${API_URL}/memberships/plans/${studentMembership.membershipPlanId}`)
+            const plan = planRes.data
+            
+            if (plan.courses && plan.courses.some(c => c.id === parseInt(id) || c._id === parseInt(id))) {
+              setHasAccess(true)
+            } else if (courseData.price === 0) {
+              // Free course - everyone has access
+              setHasAccess(true)
+            }
+          } else if (courseData.price === 0) {
+            // Free course - everyone has access
+            setHasAccess(true)
+          }
+        } else if (courseData.price === 0) {
+          // Free course - everyone has access
+          setHasAccess(true)
+        }
+      } catch (membershipError) {
+        console.error('Error checking membership:', membershipError)
+        // If course is free, allow access
+        if (courseData.price === 0) {
+          setHasAccess(true)
+        }
+      }
     } catch (error) {
       console.error('Error fetching course:', error)
       if (error.response?.status === 404) {
@@ -106,14 +145,28 @@ export default function CourseDetail() {
                   <p className="text-gray-600 mb-4">
                     Download the exam paper to review and prepare for your test. The exam paper contains sample questions and study materials.
                   </p>
-                  <a
-                    href={`${(process.env.NEXT_PUBLIC_API_URL || 'http://86.104.72.45:5000/api').replace('/api', '')}${course.examPaperUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary inline-block"
-                  >
-                    Download Exam Paper
-                  </a>
+                  {hasAccess || course.price === 0 ? (
+                    <a
+                      href={`${(process.env.NEXT_PUBLIC_API_URL || 'http://86.104.72.45:5000/api').replace('/api', '')}${course.examPaperUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary inline-block"
+                    >
+                      Download Exam Paper
+                    </a>
+                  ) : (
+                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                      <p className="text-yellow-800 mb-2">
+                        <strong>Membership Required</strong>
+                      </p>
+                      <p className="text-yellow-700 text-sm mb-3">
+                        You need to upgrade your membership plan to access this exam paper.
+                      </p>
+                      <Link href="/memberships" className="btn-primary inline-block text-sm">
+                        Upgrade Membership
+                      </Link>
+                    </div>
+                  )}
                 </div>
                 <div className="hidden md:block text-6xl">📚</div>
               </div>
