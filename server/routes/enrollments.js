@@ -381,8 +381,33 @@ router.post('/exam/submit', async (req, res) => {
 // Get all enrollments (admin)
 router.get('/', async (_req, res) => {
   try {
-    const rows = await all('SELECT * FROM enrollments ORDER BY enrolledAt DESC');
-    res.json(rows.map(mapEnrollmentRow));
+    const rows = await all(
+      `SELECT e.*,
+              u.firstName as studentFirstName, u.lastName as studentLastName,
+              c.name as courseName
+       FROM enrollments e
+       LEFT JOIN users u ON e.studentId = u.id
+       LEFT JOIN courses c ON e.courseId = c.id
+       ORDER BY e.enrolledAt DESC`
+    );
+
+    const enrollments = rows.map(row => {
+      const enrollment = mapEnrollmentRow(row);
+      if (row.studentFirstName || row.studentLastName) {
+        enrollment.student = {
+          firstName: row.studentFirstName,
+          lastName: row.studentLastName
+        };
+      }
+      if (row.courseName) {
+        enrollment.course = {
+          name: row.courseName
+        };
+      }
+      return enrollment;
+    });
+
+    res.json(enrollments);
   } catch (error) {
     console.error('Error fetching enrollments:', error);
     res.status(500).json({ error: 'Failed to fetch enrollments' });
