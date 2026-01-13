@@ -74,9 +74,9 @@ export default function CourseCard({ course }) {
             📄 Click to view exam paper
           </p>
         )}
-        {course._id && (
+        {(course._id || course.id) && (
           <Link 
-            href={`/courses/${course._id}`}
+            href={`/courses/${course._id || course.id}`}
             className="mt-4 inline-block text-primary-600 hover:text-primary-700 font-semibold text-sm"
             onClick={(e) => e.stopPropagation()}
           >
