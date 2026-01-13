@@ -5,8 +5,7 @@ import axios from 'axios'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { createSession, hasValidSession, getStudentId } from '../../utils/session'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://86.104.72.45:5000/api'
+import { API_URL } from '../../utils/api'
 
 // Helper functions
 const getStudentIdFromResponse = (data) => {
