@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/home": "pages/home.js",
-  "/about": "pages/about.js",
-  "/contact": "pages/contact.js"
+  "/student/login": "pages/student/login.js",
+  "/student/register": "pages/student/register.js",
+  "/memberships": "pages/memberships.js"
 }

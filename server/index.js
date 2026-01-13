@@ -15,18 +15,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/courses', require('./routes/courses'));
-app.use('/api/enrollments', require('./routes/enrollments'));
-app.use('/api/certificates', require('./routes/certificates'));
-app.use('/api/teachable', require('./routes/teachable'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/memberships', require('./routes/memberships'));
-app.use('/api/contact', require('./routes/contact'));
+app.use('/auth', require('./routes/auth'));
+app.use('/users', require('./routes/users'));
+app.use('/courses', require('./routes/courses'));
+app.use('/enrollments', require('./routes/enrollments'));
+app.use('/certificates', require('./routes/certificates'));
+app.use('/teachable', require('./routes/teachable'));
+app.use('/payments', require('./routes/payments'));
+app.use('/memberships', require('./routes/memberships'));
+app.use('/contact', require('./routes/contact'));
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Stay Ready Training Academy API is running' });
 });
 
